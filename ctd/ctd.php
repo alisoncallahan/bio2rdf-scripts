@@ -526,7 +526,7 @@ X 1 GeneID (NCBI Gene or CTD accession identifier)
 X 3 DiseaseID (MeSH or OMIM accession identifier)
   4 DirectEvidence
   5 InferenceChemicalName
-  6 InferenceScore
+X 6 InferenceScore
 X 7 OmimIDs ('|'-delimited list)
 X 8 PubmedIDs ('|'-delimited list)
 */
@@ -549,6 +549,7 @@ function CTD_genes_diseases()
 		$gene_name = $a[0];
 		$gene_id = $a[1];
 		$disease_name = $a[2];
+		$inference_score = $a[6];
 
 		$this->getRegistry()->parseQName($a[3],$disease_ns,$disease_id);
 		
@@ -557,7 +558,8 @@ function CTD_genes_diseases()
 		$this->AddRDF(
 			parent::describeIndividual($uri, "$gene_name (geneid:$gene_id) - $disease_name ($disease_ns:$disease_id) association", $this->getVoc()."Gene-Disease-Association").
 			parent::triplify($uri, $this->getVoc()."gene", "geneid:".$gene_id).
-			parent::triplify($uri, $this->getVoc()."disease", $disease_ns.":".$disease_id)
+			parent::triplify($uri, $this->getVoc()."disease", $disease_ns.":".$disease_id).
+			parent::triplifyString($uri, $this->getVoc()."inference-score", $inference_score).
 		);
 		
 		if($a[7]) {
