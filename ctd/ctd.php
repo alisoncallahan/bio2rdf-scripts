@@ -559,7 +559,7 @@ function CTD_genes_diseases()
 			parent::describeIndividual($uri, "$gene_name (geneid:$gene_id) - $disease_name ($disease_ns:$disease_id) association", $this->getVoc()."Gene-Disease-Association").
 			parent::triplify($uri, $this->getVoc()."gene", "geneid:".$gene_id).
 			parent::triplify($uri, $this->getVoc()."disease", $disease_ns.":".$disease_id).
-			parent::triplifyString($uri, $this->getVoc()."inference-score", $inference_score).
+			parent::triplifyString($uri, $this->getVoc()."inference-score", $inference_score)
 		);
 		
 		if($a[7]) {
