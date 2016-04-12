@@ -30,20 +30,22 @@ SOFTWARE.
 */
 
 require_once(__DIR__.'/../../php-lib/bio2rdfapi.php');
+require_once(__DIR__.'/../../php-lib/xmlapi.php');
 
 class HomologeneParser extends Bio2RDFizer{
 	
 	private $version = 2.0;
 
 	function __construct($argv){
-		parent::__construct($argv, "homologene");
+		parent::__construct($argv, 'homologene');
 		parent::addParameter('files',true,'all','all','files to process');
 		parent::addParameter('download_url', false, null,'ftp://ftp.ncbi.nih.gov/pub/HomoloGene/current/' );
 		parent::initialize();
 	}
 
  	function Run(){
- 		$file = "homologene.data";
+ 		#$file = "homologene.data";
+ 		$file = 'homologene_sample.xml';
 		$ldir = $this->GetParameterValue('indir');
 		$odir = $this->GetParameterValue('outdir');
 		$rdir = $this->GetParameterValue('download_url');		
@@ -66,7 +68,8 @@ class HomologeneParser extends Bio2RDFizer{
 		parent::setReadFile($lfile);
 		parent::setWriteFile($odir.$ofile, $gz);
 		echo "processing $file... ";
-		$this->process();	
+		$this -> process_xml();
+		#$this->process();	
 		echo "done!".PHP_EOL;
 		parent::getWriteFile()->close();
 
@@ -128,6 +131,8 @@ class HomologeneParser extends Bio2RDFizer{
 			$gi = "gi:".$parsed_line["gi"];
 			$genesymbol = str_replace("\\", "", $parsed_line["genesymbol"]);
 			$refseq = "refseq:".$parsed_line["refseq"];
+			$refseq_no_version = substr($refseq, 0, -2);
+			#echo $refseq."\n".$refseq_no_version."\n"."***************\n";
 
 			parent::AddRDF(
 				parent::triplify($hid, $this->getVoc()."x-taxid", $taxid).
@@ -149,7 +154,49 @@ class HomologeneParser extends Bio2RDFizer{
 				parent::triplify($hid, $this->getVoc()."x-refseq", $refseq).
 				parent::describeProperty($this->getVoc()."x-refseq", "Link to NCBI Refseq")
 			);	
+			parent::AddRDF(
+				parent::triplify($hid, $this->getVoc()."x-refseq", $refseq_no_version).
+				parent::describeProperty($this->getVoc()."x-refseq", "Link to NCBI Refseq without version")
+			);	
 			$this->WriteRDFBufferToWriteFile();
+		}
+	}
+
+	function process_xml(){
+		#$lfile = $this -> GetReadFile();
+		$lfile = "/Users/acallahan/bio2rdf_data/homologene/raw/homologene_sample.xml";
+		$cxml = new CXML($lfile);
+		$cxml->Parse();
+		$xml = $cxml->GetXMLRoot();
+		$this->parse_homologene_xml($xml);
+	}
+
+	function parse_homologene_xml($xml){
+		foreach ($xml->{'HG-EntrySet_entries'}->{'HG-Entry'} as $entry) {
+			$hg_id = $entry->{'HG-Entry_hg-id'};
+			$hg_entry_version = $entry->{'HG-Entry_version'};
+			$hg_entry_caption = $entry->{'HG-Entry_caption'};
+
+			$parsed_line = $this->parse_homologene_tab_line($aLine);
+			$hid = "homologene:".$hg_id;
+			$hid_label = "homologene group ".$hg_id;
+
+
+
+			parent::AddRDF(
+				parent::describeIndividual($hid, $hid_label, $this->getVoc()."Homologene-Group").
+				parent::describeClass($this->getVoc()."Homologene-Group", "Homologene Group" )
+			);
+
+			$geneid = "ncbigene:".$parsed_line["geneid"];
+			$taxid = "taxid:".$parsed_line["taxid"];
+			$gi = "gi:".$parsed_line["gi"];
+			$genesymbol = str_replace("\\", "", $parsed_line["genesymbol"]);
+			$refseq = "refseq:".$parsed_line["refseq"];
+			$refseq_no_version = substr($refseq, 0, -2);
+			#echo $entry->children('HG-Entry_hg-id',true);
+			#$homologeneId = $entry -> attributes() -> children('HG-Entry_hg-id',true);
+			#echo $homologeneId."\n";
 		}
 	}
 
@@ -164,6 +211,8 @@ class HomologeneParser extends Bio2RDFizer{
 		$returnMe["refseq"] = trim($r[5]);
 		return $returnMe;
 	}
+
+
 }
 
 ?>
